@@ -27,7 +27,7 @@ function DownloadingPage() {
 
   return (
     <div className="flex flex-col mt-[100px]">
-      {!showCompleted ? <Completed /> : <Download />}
+      {showCompleted ? <Completed /> : <Download />}
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 import DocReducer from '../features/docs/docSlice'
+import SignReducer from '../features/sign/signSlice'
 
 export const store = configureStore({
     reducer: {
         docSlice: DocReducer,
+        signSlice: SignReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

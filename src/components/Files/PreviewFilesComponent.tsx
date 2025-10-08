@@ -4,13 +4,14 @@ import type { RootState } from "../../app/store";
 import { setPreviewState, setDocs } from "../../features/docs/docSlice";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useNavigate } from "react-router-dom";
+import { Rnd } from "react-rnd";
 
 pdfjs.GlobalWorkerOptions.workerSrc =
   "/node_modules/pdfjs-dist/build/pdf.worker.js";
 
 type PreviewFilesProps = {
-  showControls?: boolean; // show Change / Confirm buttons
-  isOverlay?: boolean; // apply fixed/fullscreen overlay styles
+  showControls?: boolean;
+  isOverlay?: boolean;
 };
 
 function PreviewFilesComponent({
@@ -19,6 +20,7 @@ function PreviewFilesComponent({
 }: PreviewFilesProps) {
   const dispatch = useDispatch();
   const { uploadedDoc } = useSelector((state: RootState) => state.docSlice);
+  const { uploadedSign } = useSelector((state: RootState) => state.signSlice); // ✅ added
   const navigate = useNavigate();
 
   if (!uploadedDoc) return null;
@@ -27,14 +29,40 @@ function PreviewFilesComponent({
   const isImage = uploadedDoc.type.startsWith("image/");
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(300);
-  const [zoom, setZoom] = useState(.9);
+  const [zoom, setZoom] = useState(0.9);
+
+  // ✅ signature overlay state
+  const [signPosition, setSignPosition] = useState({ x: 150, y: 150 });
+  const [signScale, setSignScale] = useState(1);
+  const [dragging, setDragging] = useState(false);
+  const [signSize, setSignSize] = useState({ width: 200, height: 80 });
+
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 2));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, .9));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.9));
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
   }
+
+  // ✅ handle drag of signature
+  const handleMouseDown = () => setDragging(true);
+  const handleMouseUp = () => setDragging(false);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setSignPosition({
+      x: e.nativeEvent.offsetX - 50,
+      y: e.nativeEvent.offsetY - 25,
+    });
+  };
+
+  // ✅ handle scroll for scaling
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!uploadedSign) return;
+    setSignScale((prev) =>
+      Math.max(0.5, Math.min(3, prev + e.deltaY * -0.001))
+    );
+  };
 
   useEffect(() => {
     function updateWidth() {
@@ -50,6 +78,9 @@ function PreviewFilesComponent({
 
   return (
     <div
+      onMouseMove={handleMouseMove} // ✅ added for drag
+      onMouseUp={handleMouseUp} // ✅ added for drag stop
+      onWheel={handleWheel} // ✅ added for scaling
       className={`${
         isOverlay
           ? "fixed inset-0 z-50 p-6 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center overflow-auto"
@@ -95,7 +126,7 @@ function PreviewFilesComponent({
       {/* Main Preview Area */}
       {isPDF || isImage ? (
         <div
-          className="relative w-[400px] md:w-[500px] lg:[600px]  flex flex-col items-center gap-6 p-4 overflow-auto"
+          className="relative w-[400px] md:w-[500px] lg:w-[600px] flex flex-col items-center gap-6 p-4 overflow-auto"
           style={{ maxHeight: "80vh" }}
         >
           {isPDF && (
@@ -125,6 +156,69 @@ function PreviewFilesComponent({
               }}
             />
           )}
+
+          {/* ✅ Signature Overlay */}
+          {uploadedSign && (
+            <Rnd
+              bounds="parent"
+              size={{ width: signSize.width, height: signSize.height }}
+              position={{ x: signPosition.x, y: signPosition.y }}
+              onDragStop={(e, d) => setSignPosition({ x: d.x, y: d.y })}
+              onResize={(e, direction, ref, delta, position) => {
+                const newWidth = parseFloat(ref.style.width);
+                const scaleRatio = newWidth / 200; // 200 is initial width baseline
+                setSignSize({
+                  width: newWidth,
+                  height: parseFloat(ref.style.height),
+                });
+                setSignScale(scaleRatio);
+                setSignPosition(position);
+              }}
+              style={{
+                border: "2px dashed #3b82f6",
+                borderRadius: "6px",
+                background: "rgba(255,255,255,0.15)",
+                cursor: "move",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  transform: `scale(${signScale})`,
+                  transformOrigin: "center",
+                  transition: "transform 0.1s ease",
+                }}
+              >
+                {typeof uploadedSign === "string" ? (
+                  <p
+                    className="text-black font-signature font-bold"
+                    style={{
+                      fontSize: "2rem",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {uploadedSign}
+                  </p>
+                ) : (
+                  <img
+                    src={URL.createObjectURL(uploadedSign)}
+                    alt="signature"
+                    style={{
+                      width: "150px",
+                      height: "auto",
+                      transform: `scale(${signScale})`,
+                      transformOrigin: "center",
+                      transition: "transform 0.1s ease",
+                    }}
+                  />
+                )}
+              </div>
+            </Rnd>
+          )}
         </div>
       ) : (
         <div className="relative w-full flex flex-col items-center gap-6 p-4 overflow-auto">
@@ -142,10 +236,10 @@ function PreviewFilesComponent({
             −
           </button>
           <button
-            onClick={() => setZoom(.9)}
+            onClick={() => setZoom(0.9)}
             className="w-[55px] py-1 bg-[#FEB21A] text-white rounded text-sm font-semibold"
           >
-            {Math.round((zoom) * 100)+10}%
+            {Math.round(zoom * 100) + 10}%
           </button>
           <button
             onClick={handleZoomIn}

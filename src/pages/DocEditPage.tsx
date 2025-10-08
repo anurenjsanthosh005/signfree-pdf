@@ -4,11 +4,13 @@ import type { RootState } from "../app/store";
 import { useNavigate } from "react-router-dom";
 import PreviewFilesComponent from "../components/Files/PreviewFilesComponent";
 import { setDownloadState } from "../features/docs/docSlice";
+import CreateSign from "../components/Signature/CreateSign";
 
 function DocEditPage() {
   const { uploadedDoc } = useSelector((state: RootState) => state.docSlice);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!uploadedDoc) {
@@ -53,11 +55,20 @@ function DocEditPage() {
 
         {/* Bottom bar */}
         <div className="fixed bottom-0 left-0 w-full flex flex-col items-center py-3 shadow-md">
-          {/* <div className="text-[#134686] font-semibold mb-2">Page 1 of 5</div> */}
           <div className="flex gap-4">
-            <button className="bg-[#FEB21A] text-black border-2 font-semibold px-6 py-2 rounded hover:bg-[#ED3F27] transition">
+            <button
+              className="bg-[#FEB21A] text-black border-2 font-semibold px-6 py-2 rounded hover:bg-[#ED3F27] transition"
+              onClick={() => setIsModalOpen(true)}
+            >
               <i className="fa-solid fa-file-signature"></i>
             </button>
+
+            {/* Modal */}
+            {isModalOpen && (
+              <CreateSign
+                onClose={() => setIsModalOpen(false)} // close modal
+              />
+            )}
             <button
               className="bg-[#FEB21A] text-black border-2 font-semibold px-6 py-2 rounded hover:bg-[#ED3F27] transition"
               onClick={() => navigate("/", { replace: true })}
