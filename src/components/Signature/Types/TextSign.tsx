@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { setIsSignText, setUploadedSign } from "../../../features/sign/signSlice";
+import { setIsSignText, setUploadedFileSign, setUploadedSign } from "../../../features/sign/signSlice";
 
 type TextSignModalProps = {
   onClose: () => void;
@@ -17,6 +17,7 @@ function TextSign ({ onClose,createSignModal }:TextSignModalProps) {
     console.log('text sign save clicked',text);
     dispatch(setIsSignText(true))
     dispatch(setUploadedSign(text))  
+    dispatch(setUploadedFileSign(null))  
     onClose()
     createSignModal()
   }

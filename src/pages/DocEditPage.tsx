@@ -97,7 +97,7 @@ function DocEditPage() {
             <button
               onClick={() => {
                 handleDownload();
-                navigate("/download", { replace: true });
+                // navigate("/download", { replace: true });
               }}
               className="bg-[#FEB21A] text-black border-2 font-semibold px-6 py-2 rounded hover:bg-[#6fcf6c] transition"
             >

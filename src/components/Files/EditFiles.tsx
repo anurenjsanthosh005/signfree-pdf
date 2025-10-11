@@ -15,7 +15,9 @@ const EditFiles = forwardRef<HTMLDivElement>((props, ref) => {
   const { uploadedDoc, editState } = useSelector(
     (state: RootState) => state.docSlice
   );
-  const { uploadedSign } = useSelector((state: RootState) => state.signSlice);
+  const { uploadedSign, uploadedFileSign, isSignText } = useSelector(
+    (state: RootState) => state.signSlice
+  );
 
   // Dynamic position & size for the RND box
   const [boxPosition, setBoxPosition] = useState<BoxPosition>({ x: 50, y: 50 });
@@ -58,7 +60,7 @@ const EditFiles = forwardRef<HTMLDivElement>((props, ref) => {
       )}
 
       {/* Signature overlay */}
-      {uploadedSign && (
+      {(uploadedSign || uploadedFileSign) && (
         <Rnd
           size={{ width: boxSize.width, height: boxSize.height }}
           position={{ x: boxPosition.x, y: boxPosition.y }}
@@ -75,12 +77,32 @@ const EditFiles = forwardRef<HTMLDivElement>((props, ref) => {
           }}
           onDrag={(e, d) => setBoxPosition({ x: d.x, y: d.y })}
           onResize={(e, dir, refElement, delta, position) => {
-            setBoxSize({
-              width: refElement.offsetWidth,
-              height: refElement.offsetHeight,
-            });
             setBoxPosition(position);
-            setFontSize(refElement.offsetHeight * 0.8); // scale font with height
+
+            if (isSignText && textRef.current) {
+              setBoxSize({
+                width: textRef.current.offsetWidth,
+                height: textRef.current.offsetHeight,
+              });
+              setFontSize(refElement.offsetHeight * 0.8);
+            } else if (!isSignText && uploadedFileSign) {
+              const img = new Image();
+              img.src = URL.createObjectURL(uploadedFileSign);
+              img.onload = () => {
+                // Maintain aspect ratio
+                const ratio = img.width / img.height;
+                let width = refElement.offsetWidth;
+                let height = refElement.offsetHeight;
+
+                if (width / height > ratio) {
+                  width = height * ratio;
+                } else {
+                  height = width / ratio;
+                }
+
+                setBoxSize({ width, height });
+              };
+            }
           }}
           style={{
             border: editState ? "1px dashed #fff" : "none",
@@ -88,21 +110,38 @@ const EditFiles = forwardRef<HTMLDivElement>((props, ref) => {
             alignItems: "center",
             justifyContent: "center",
             background: "transparent",
-            paddingBottom: editState ? "0px" : "70px",
+            paddingBottom: isSignText ? (editState ? "0px" : "70px") : "0px",
           }}
         >
-          <div
-            ref={textRef}
-            style={{
-              fontSize: `${fontSize}px`,
-              fontWeight: "bold", // make signature bold
-              pointerEvents: "none",
-              lineHeight: 1,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {uploadedSign}
-          </div>
+          {isSignText ? (
+            <div
+              ref={textRef}
+              style={{
+                fontSize: `${fontSize}px`,
+                fontWeight: "bold",
+                pointerEvents: "none",
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {uploadedSign}
+            </div>
+          ) : (
+            <img
+              src={
+                uploadedFileSign ? URL.createObjectURL(uploadedFileSign) : ""
+              }
+              alt="Signature"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                pointerEvents: "none",
+              }}
+            />
+          )}
         </Rnd>
       )}
     </div>

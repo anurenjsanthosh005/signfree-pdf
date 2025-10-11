@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import { setPreviewState, setDocs } from "../../features/docs/docSlice";
-import { Document, Page, pdfjs } from "react-pdf";
+import { Document, Page } from "react-pdf";
 import { useNavigate } from "react-router-dom";
 
 type PreviewFilesProps = {
