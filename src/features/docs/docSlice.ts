@@ -5,13 +5,14 @@ export type DocState = {
     uploadedDoc: File | null;
     previewState: boolean
     downloadState: boolean
+    editState: boolean
 }
 
 const initialState: DocState = {
     uploadedDoc: null,
     previewState: false,
-    downloadState: false
-
+    downloadState: false,
+    editState: true
 }
 
 export const docSlice = createSlice({
@@ -27,10 +28,13 @@ export const docSlice = createSlice({
         setDownloadState: (state, action: PayloadAction<boolean>) => {
             state.downloadState = action.payload
         },
+        setEditState: (state, action: PayloadAction<boolean>) => {
+            state.editState = action.payload
+        },
     },
 })
 
-export const { setDocs, setPreviewState,setDownloadState } = docSlice.actions
+export const { setDocs, setPreviewState, setDownloadState, setEditState } = docSlice.actions
 
 export default docSlice.reducer
 
